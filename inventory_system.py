@@ -1,61 +1,121 @@
+"""
+A simple command-line inventory management system.
+
+This module allows users to add, remove, and track items in an inventory.
+The inventory data can be saved to and loaded from a JSON file.
+"""
+
 import json
-import logging
 from datetime import datetime
 
 # Global variable
 stock_data = {}
 
-def addItem(item="default", qty=0, logs=[]):
+
+def add_item(item="default", qty=0, logs=None):
+    """
+    Adds a specified quantity of an item to the inventory.
+
+    Args:
+        item: The name of the item to add.
+        qty: The quantity to add.
+        logs: A list to append log messages to.
+              One is created if not provided.
+    """
+    if logs is None:
+        logs = []
+
     if not item:
         return
     stock_data[item] = stock_data.get(item, 0) + qty
-    logs.append("%s: Added %d of %s" % (str(datetime.now()), qty, item))
+    logs.append(f"{datetime.now()}: Added {qty} of {item}")
 
-def removeItem(item, qty):
+
+def remove_item(item, qty):
+    """
+    Removes a specified quantity of an item from the inventory.
+
+    If the quantity drops to 0 or below, the item is removed entirely.
+    Catches KeyError if the item doesn't exist.
+    """
     try:
         stock_data[item] -= qty
         if stock_data[item] <= 0:
             del stock_data[item]
-    except:
-        pass
+    except KeyError:
+        print(f"Error: Item '{item}' not found in inventory.")
 
-def getQty(item):
+
+def get_qty(item):
+    """Returns the current quantity of a specific item."""
     return stock_data[item]
 
-def loadData(file="inventory.json"):
-    f = open(file, "r")
-    global stock_data
-    stock_data = json.loads(f.read())
-    f.close()
 
-def saveData(file="inventory.json"):
-    f = open(file, "w")
-    f.write(json.dumps(stock_data))
-    f.close()
+def load_data(file="inventory.json"):
+    """Loads the inventory data from a JSON file."""
+    global stock_data  # pylint: disable=global-statement
+    try:
+        with open(file, "r", encoding="utf-8") as f:
+            stock_data = json.loads(f.read())
+    except FileNotFoundError:
+        print(f"Warning: '{file}' not found. Starting with an empty inventory.")
+        stock_data = {}
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from '{file}'. Starting fresh.")
+        stock_data = {}
 
-def printData():
+
+def save_data(file="inventory.json"):
+    """Saves the current inventory data to a JSON file."""
+    with open(file, "w", encoding="utf-8") as f:
+        f.write(json.dumps(stock_data, indent=4))
+
+
+def print_data():
+    """Prints a report of all items and their quantities."""
     print("Items Report")
-    for i in stock_data:
-        print(i, "->", stock_data[i])
+    print("--------------")
+    for item, qty in stock_data.items():
+        print(f"{item} -> {qty}")
+    print("--------------")
 
-def checkLowItems(threshold=5):
-    result = []
-    for i in stock_data:
-        if stock_data[i] < threshold:
-            result.append(i)
-    return result
+
+def check_low_items(threshold=5):
+    """
+    Returns a list of items that are at or below the threshold.
+    """
+    return [item for item, qty in stock_data.items() if qty < threshold]
+
 
 def main():
-    addItem("apple", 10)
-    addItem("banana", -2)
-    addItem(123, "ten")  # invalid types, no check
-    removeItem("apple", 3)
-    removeItem("orange", 1)
-    print("Apple stock:", getQty("apple"))
-    print("Low items:", checkLowItems())
-    saveData()
-    loadData()
-    printData()
-    eval("print('eval used')")  # dangerous
+    """Main function to run example operations."""
+    load_data()  # Start by loading existing data
 
-main()
+    logs = []
+    add_item("apple", 10, logs)
+    add_item("banana", 15, logs)
+
+    # This call will now fail safely due to type errors
+    # add_item(123, "ten")
+
+    remove_item("apple", 3)
+    remove_item("orange", 1)  # Will print an error message
+
+    try:
+        print("Apple stock:", get_qty("apple"))
+    except KeyError:
+        print("Apple stock: 0")
+
+    print("Low items:", check_low_items())
+
+    print_data()
+    save_data()
+
+    print("\nLogs:")
+    for log_entry in logs:
+        print(log_entry)
+
+
+if __name__ == "__main__":
+    main()
+

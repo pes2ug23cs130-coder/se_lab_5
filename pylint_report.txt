@@ -1,0 +1,6 @@
+************* Module inventory_system
+inventory_system.py:121:0: C0305: Trailing newlines (trailing-newlines)
+
+------------------------------------------------------------------
+Your code has been rated at 9.83/10 (previous run: 9.83/10, +0.00)
+
